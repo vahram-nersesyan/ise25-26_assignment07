@@ -1,6 +1,7 @@
 package de.seuhd.campuscoffee.domain.implementation;
 
 import de.seuhd.campuscoffee.domain.configuration.ApprovalConfiguration;
+import de.seuhd.campuscoffee.domain.exceptions.ValidationException;
 import de.seuhd.campuscoffee.domain.model.objects.Review;
 import de.seuhd.campuscoffee.domain.ports.api.ReviewService;
 import de.seuhd.campuscoffee.domain.ports.data.CrudDataService;
@@ -46,7 +47,12 @@ public class ReviewServiceImpl extends CrudServiceImpl<Review, Long> implements 
     @Transactional
     public @NonNull Review upsert(@NonNull Review review) {
         // TODO: Implement the missing business logic here
-
+        if (review.getId() == null){
+            List<Review> existingReviews = reviewDataService.filter(review.pos(), review.author());
+            if (!existingReviews.isEmpty()){
+                throw new ValidationException("User has already reviewed this POS.");
+            }
+        }
         return super.upsert(review);
     }
 
@@ -64,20 +70,24 @@ public class ReviewServiceImpl extends CrudServiceImpl<Review, Long> implements 
 
         // validate that the user exists
         // TODO: Implement the required business logic here
-
+        userDataService.getById(userId);
         // validate that the review exists
         // TODO: Implement the required business logic here
 
         // a user cannot approve their own review
         // TODO: Implement the required business logic here
-
+        if (review.author().id().equals(userId)) {
+            throw new ValidationException("User cannot approve their own review");
+        }
         // increment approval count
         // TODO: Implement the required business logic here
-
+        Review updatedReview = review.toBuilder()
+                .approvalCount(review.approvalCount() + 1)
+                .build();
         // update approval status to determine if the review now reaches the approval quorum
         // TODO: Implement the required business logic here
-
-        return reviewDataService.upsert(review);
+        updatedReview = updateApprovalStatus(updatedReview);
+        return reviewDataService.upsert(updatedReview);
     }
 
     /**
