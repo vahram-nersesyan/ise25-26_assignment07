@@ -2,6 +2,7 @@ package de.seuhd.campuscoffee.domain.implementation;
 
 import de.seuhd.campuscoffee.domain.configuration.ApprovalConfiguration;
 import de.seuhd.campuscoffee.domain.exceptions.ValidationException;
+import de.seuhd.campuscoffee.domain.model.objects.Pos;
 import de.seuhd.campuscoffee.domain.model.objects.Review;
 import de.seuhd.campuscoffee.domain.ports.api.ReviewService;
 import de.seuhd.campuscoffee.domain.ports.data.CrudDataService;
@@ -47,8 +48,9 @@ public class ReviewServiceImpl extends CrudServiceImpl<Review, Long> implements 
     @Transactional
     public @NonNull Review upsert(@NonNull Review review) {
         // TODO: Implement the missing business logic here
+        Pos pos = posDataService.getById(review.pos().getId());
         if (review.getId() == null){
-            List<Review> existingReviews = reviewDataService.filter(review.pos(), review.author());
+            List<Review> existingReviews = reviewDataService.filter(pos, review.author());
             if (!existingReviews.isEmpty()){
                 throw new ValidationException("User has already reviewed this POS.");
             }
@@ -73,7 +75,7 @@ public class ReviewServiceImpl extends CrudServiceImpl<Review, Long> implements 
         userDataService.getById(userId);
         // validate that the review exists
         // TODO: Implement the required business logic here
-
+        reviewDataService.getById(review.getId());
         // a user cannot approve their own review
         // TODO: Implement the required business logic here
         if (review.author().id().equals(userId)) {
